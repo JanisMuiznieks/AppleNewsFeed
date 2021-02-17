@@ -12,6 +12,7 @@ class NewsFeedViewController: UIViewController {
 
     var items: [Item] = []
     
+    @IBOutlet weak var activityIndicatorView: UIActivityIndicatorView!
     @IBOutlet weak var tableView: UITableView!
     
     
@@ -19,13 +20,30 @@ class NewsFeedViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Apple News"
+        activityIndicatorView.isHidden = true
+        activityIndicatorView.style = .large
+        tableView.isHidden = true
     }
 
     @IBAction func getDataTapped(_ sender: Any) {
         handleGetData()
+        activityIndicator(animated: true)
         
     }
     
+    func activityIndicator(animated: Bool){
+        DispatchQueue.main.async {
+            if animated {
+                self.tableView.isHidden = false
+                self.activityIndicatorView.isHidden = false
+                self.activityIndicatorView.startAnimating()
+            } else {
+                self.activityIndicatorView.isHidden = true
+                self.activityIndicatorView.stopAnimating()
+            }
+        }
+        
+    }
     
     func handleGetData(){
     
@@ -62,6 +80,7 @@ class NewsFeedViewController: UIViewController {
         
         DispatchQueue.main.async {
             self.tableView.reloadData()
+            self.activityIndicator(animated: false)
         }
     }
 
@@ -72,24 +91,42 @@ extension NewsFeedViewController : UITableViewDataSource, UITableViewDelegate {
         return items.count
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "feedCell", for: indexPath)
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "feedCell", for: indexPath) as? NewsTableViewCell else {
+            return UITableViewCell()}
         
-        cell.textLabel?.text = items[indexPath.row].title
-        cell.detailTextLabel?.text = items[indexPath.row].description
+//        cell.textLabel?.text = items[indexPath.row].title
+//        cell.detailTextLabel?.text = items[indexPath.row].description
         
+        let item = items[indexPath.row]
         
+        if let image = item.image {
+            cell.newsImageView.image = image
+        }
+        
+        cell.newsTitleLabel.text = item.title
+        cell.newsTitleLabel.numberOfLines = 0
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 120
+        
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let vc = UIStoryboard(name: "Main", bundle: Bundle.main).instantiateViewController(identifier: "DetailViewController") as? DetailViewController{
+        let storyboard = UIStoryboard(name: "Main", bundle: Bundle.main)
+        guard let vc = storyboard.instantiateViewController(identifier: "DetailViewController") as? DetailViewController else { return }
+        
+        
             vc.contentString = items[indexPath.row].description
             vc.titleString = items[indexPath.row].title
             vc.webURLString = items[indexPath.row].url
+        vc.newsImage = items[indexPath.row].image
+        
             
             navigationController?.pushViewController(vc, animated: true)
         }
     }
     
-}
+
 
